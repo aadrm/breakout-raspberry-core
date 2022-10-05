@@ -1,11 +1,11 @@
-
 class Game:
     
     status = {
         0: 'Standing-by',
-        1: 'Game started',
-        2: 'Escape-pod reached',
-        3: 'Escaped'
+        1: 'Intro Starts',
+        2: 'Smoke is released',
+        3: 'Escape-pod is reached',
+        4: 'Escape!',
 
     }
     progress = 0

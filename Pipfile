@@ -4,8 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+"mock.gpio" = "0.1.8"
+"rpi.gpio" = "0.7.1"
 
 [dev-packages]
+pytest = "*"
 
 [requires]
-python_version = "3.10"
+python_version = ">=3.7"
