@@ -25,7 +25,7 @@ DOOR_SHIP = 5
 THROTTLE = 12
 SMOKE_MACHINE = 22
 
-DELAY_TO_SMOKE = 5
+DELAY_TO_SMOKE = 22
 
 GPIO.setup(DOOR_MAIN, GPIO.IN)
 GPIO.setup(STANDBY_SWITCH, GPIO.IN)
@@ -35,12 +35,6 @@ GPIO.setup(SMOKE_MACHINE,  GPIO.OUT)
 GPIO.output(SMOKE_MACHINE,  0)
 
 
-game_sensors = {
-    'door_main': 0,
-    'door_ship': 0,
-    'standby_switch': 0,
-    'throttle': 0
-}
 
 door_main_state = 0
 door_ship_state = 0
@@ -87,24 +81,37 @@ def debounce(pin: int) -> int:
     
     position = 1 if debounce_check > 25 else 0
     return position
-    
+
+
+def print_sensor_status() -> None:
+    game_sensors = {
+        'door_main': 0,
+        'door_ship': 0,
+        'standby_switch': 0,
+        'throttle': 0
+    }
+    game_sensors['door_main'] = GPIO.input(DOOR_MAIN)
+    game_sensors['door_ship'] = GPIO.input(DOOR_SHIP)
+    game_sensors['standby_switch'] = GPIO.input(STANDBY_SWITCH)
+    game_sensors['throttle'] = GPIO.input(THROTTLE)
+    print(game_sensors)
+
 
 if __name__ == '__main__':
     game = Game()
     timer = Timer()
     print(game)
-    print(game_sensors)
+    print_sensor_status()
     print(PATH_TO_IMAGE)
     try:
         image_popen = Popen(['feh', '-Z', '-F', PATH_TO_IMAGE])
     except FileNotFoundError as e:
         print(e)
-    while True:
-        game_sensors['door_main'] = GPIO.input(DOOR_MAIN)
-        game_sensors['door_ship'] = GPIO.input(DOOR_SHIP)
-        game_sensors['standby_switch'] = GPIO.input(STANDBY_SWITCH)
-        game_sensors['throttle'] = GPIO.input(THROTTLE)
 
+    while True:
+        # Prevent looping too fast
+        sleep(1)
+        print_sensor_status()
         if not GPIO.input(DOOR_MAIN) \
                 and not GPIO.input(STANDBY_SWITCH) \
                 and game.progress == 0:
@@ -116,7 +123,6 @@ if __name__ == '__main__':
                 httpReq("start")
             
         if game.progress == 1:
-            sleep(1)
             time_to_smoke = DELAY_TO_SMOKE - timer.time_passed()
             print(f'time to smoke: {time_to_smoke}')
 
@@ -136,15 +142,13 @@ if __name__ == '__main__':
                 game.next_stage()
                 httpReq('endgame')
                 try:
-                    video_popen = Popen(['omxplayer', '--aspect-mode', 'fill', PATH_TO_MOVIE])
+                    video_popen = Popen(['cvlc', '-f', PATH_TO_MOVIE])
                 except Exception as e:
                     print(e)
 
-        if game_sensors['standby_switch'] == 1 and game.progress > 3:
+        if GPIO.input(STANDBY_SWITCH) == 1 and game.progress > 3:
             if debounce(STANDBY_SWITCH):
                 print('Restart Call')
                 game.reset()
                 print(game)
                 GPIO.output(SMOKE_MACHINE,  0)
-                timer = 0
-                Restart()
