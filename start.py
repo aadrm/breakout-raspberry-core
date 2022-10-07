@@ -113,7 +113,7 @@ if __name__ == '__main__':
     while True:
         # Prevent looping too fast
         sleep(1)
-        print(print_sensor_status, game)
+        print(print_sensor_status(), game)
         if not GPIO.input(DOOR_MAIN) \
                 and not GPIO.input(STANDBY_SWITCH) \
                 and game.progress == 0:
