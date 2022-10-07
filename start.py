@@ -77,7 +77,7 @@ def debounce(pin: int) -> int:
         if GPIO.input(pin):
             debounce_check += 1
     
-    position = 1 if debounce_check > 25 else 0
+    position = True if debounce_check > 25 else False
     return position
 
 
