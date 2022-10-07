@@ -2,10 +2,10 @@
 Breakout Escape Room Spacelab Raspberry Pi Script
 
 """
+import subprocess
 import os
 from time import sleep
 from urllib.request import urlopen
-from subprocess import Popen
 
 try:
     import RPi.GPIO as GPIO
@@ -33,8 +33,6 @@ GPIO.setup(THROTTLE, GPIO.IN)
 GPIO.setup(DOOR_SHIP, GPIO.IN)
 GPIO.setup(SMOKE_MACHINE,  GPIO.OUT)
 GPIO.output(SMOKE_MACHINE,  0)
-
-
 
 door_main_state = 0
 door_ship_state = 0
@@ -83,7 +81,7 @@ def debounce(pin: int) -> int:
     return position
 
 
-def print_sensor_status() -> None:
+def print_sensor_status() -> str:
     game_sensors = {
         'door_main': 0,
         'door_ship': 0,
@@ -94,7 +92,7 @@ def print_sensor_status() -> None:
     game_sensors['door_ship'] = GPIO.input(DOOR_SHIP)
     game_sensors['standby_switch'] = GPIO.input(STANDBY_SWITCH)
     game_sensors['throttle'] = GPIO.input(THROTTLE)
-    print(game_sensors)
+    return str(game_sensors)
 
 
 if __name__ == '__main__':
@@ -104,14 +102,18 @@ if __name__ == '__main__':
     print_sensor_status()
     print(PATH_TO_IMAGE)
     try:
-        image_popen = Popen(['feh', '-Z', '-F', PATH_TO_IMAGE])
-    except FileNotFoundError as e:
+        img = subprocess.Popen(
+            ['feh', '-Z', '-F', PATH_TO_IMAGE],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    except Exception as e:
         print(e)
 
     while True:
         # Prevent looping too fast
         sleep(1)
-        print_sensor_status()
+        print(print_sensor_status, game)
         if not GPIO.input(DOOR_MAIN) \
                 and not GPIO.input(STANDBY_SWITCH) \
                 and game.progress == 0:
@@ -142,7 +144,12 @@ if __name__ == '__main__':
                 game.next_stage()
                 httpReq('endgame')
                 try:
-                    video_popen = Popen(['cvlc', '-f', PATH_TO_MOVIE])
+                    vid = subprocess.Popen(
+                        ['cvlc', '-f', PATH_TO_MOVIE],
+                        stderr=subprocess.PIPE,
+                        stdout=subprocess.PIPE,
+
+                    )
                 except Exception as e:
                     print(e)
 
