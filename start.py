@@ -155,7 +155,7 @@ if __name__ == '__main__':
                 try:
                     img.kill()
                 except Exception as e:
-                    print(e)
+                    pass
                 try:
                     img = subprocess.Popen(
                         ['feh', '-Z', '-F', PATH_TO_IMAGE],
@@ -163,4 +163,4 @@ if __name__ == '__main__':
                         stderr=subprocess.PIPE,
                     )
                 except Exception as e:
-                    print(e)
+                    pass
