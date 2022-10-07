@@ -60,7 +60,7 @@ def httpReq(command):
         print('Err')
 
 
-def debounce(pin: int) -> int:
+def debounce(pin: int) -> bool:
     """ Debounces a GPIO input
 
     Args:
