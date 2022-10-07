@@ -101,14 +101,6 @@ if __name__ == '__main__':
     print(game)
     print_sensor_status()
     print(PATH_TO_IMAGE)
-    try:
-        img = subprocess.Popen(
-            ['feh', '-Z', '-F', PATH_TO_IMAGE],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-    except Exception as e:
-        print(e)
 
     while True:
         # Prevent looping too fast
@@ -153,9 +145,20 @@ if __name__ == '__main__':
                 except Exception as e:
                     print(e)
 
+
         if GPIO.input(STANDBY_SWITCH) == 1 and game.progress > 3:
             if debounce(STANDBY_SWITCH):
                 print('Restart Call')
                 game.reset()
                 print(game)
                 GPIO.output(SMOKE_MACHINE,  0)
+                try:
+                    img.kill()
+                try:
+                    img = subprocess.Popen(
+                        ['feh', '-Z', '-F', PATH_TO_IMAGE],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                    )
+                except Exception as e:
+                    print(e)
