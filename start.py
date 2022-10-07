@@ -154,7 +154,7 @@ if __name__ == '__main__':
                 GPIO.output(SMOKE_MACHINE,  0)
                 try:
                     img.kill()
-                except Exception:
+                except Exception as e:
                     print(e)
                 try:
                     img = subprocess.Popen(
