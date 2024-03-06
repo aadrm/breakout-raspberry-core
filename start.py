@@ -47,17 +47,23 @@ PATH_TO_SCRIPT = os.path.dirname(__file__)
 PATH_TO_MEDIA = os.path.join(PATH_TO_SCRIPT, 'media')
 PATH_TO_MOVIE = os.path.join(PATH_TO_MEDIA, 'video.mp4')
 PATH_TO_IMAGE = os.path.join(PATH_TO_MEDIA, 'image.jpg')
-HOUDINI_IP = '192.168.0.101'
+TRY_IPS = [
+        '192.168.0.111',
+        '192.168.0.101',
+    ]
+HOUDINI_IP = '192.168.0.111'
+HOUDINI_IP_ = '192.168.0.101'
 HOUDINI_PORT = '14999'
 
 
 def httpReq(command):
-    url ="http://" + HOUDINI_IP + ":" + HOUDINI_PORT + "/" + command
-    print(url)
-    try:
-        urlopen(url, timeout=2).read()
-    except Exception:
-        print('Err')
+    for ip in TRY_IPS:
+        url ="http://" + ip + ":" + HOUDINI_PORT + "/" + command
+        print('try', url)
+        try:
+            urlopen(url, timeout=2).read()
+        except Exception:
+            print('Err', url)
 
 
 def debounce(pin: int) -> bool:
