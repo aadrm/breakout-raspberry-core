@@ -1,5 +1,5 @@
 class Game:
-    
+
     status = {
         0: 'Standing-by',
         1: 'Intro Starts',
@@ -8,10 +8,9 @@ class Game:
         4: 'Escape!',
 
     }
-    progress = 0
 
     def __init__(self):
-        pass
+        self.progress = 4
 
     def next_stage(self) -> None:
         self.progress += 1
@@ -21,4 +20,3 @@ class Game:
 
     def __str__(self) -> str:
         return self.status[self.progress]
-        

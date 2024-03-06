@@ -2,10 +2,10 @@
 Breakout Escape Room Spacelab Raspberry Pi Script
 
 """
+import subprocess
 import os
 from time import sleep
 from urllib.request import urlopen
-from subprocess import Popen
 
 try:
     import RPi.GPIO as GPIO
@@ -22,8 +22,8 @@ GPIO.setwarnings(False)
 DOOR_MAIN = 23
 STANDBY_SWITCH = 24
 DOOR_SHIP = 5
+ARDUINO_THROTTLE_PIN = 6
 THROTTLE = 12
-THROTTLE_SIGNAL_TO_ARDUINO = 6
 SMOKE_MACHINE = 22
 
 DELAY_TO_SMOKE = 22
@@ -33,11 +33,9 @@ GPIO.setup(STANDBY_SWITCH, GPIO.IN)
 GPIO.setup(THROTTLE, GPIO.IN)
 GPIO.setup(DOOR_SHIP, GPIO.IN)
 GPIO.setup(SMOKE_MACHINE,  GPIO.OUT)
-GPIO.setup(THROTTLE_SIGNAL_TO_ARDUINO, GPIO.OUT)
-GPIO.output(THROTTLE_SIGNAL_TO_ARDUINO,  1)
+GPIO.setup(ARDUINO_THROTTLE_PIN,  GPIO.OUT)
 GPIO.output(SMOKE_MACHINE,  0)
-
-
+GPIO.output(ARDUINO_THROTTLE_PIN,  1)
 
 door_main_state = 0
 door_ship_state = 0
@@ -52,20 +50,26 @@ PATH_TO_SCRIPT = os.path.dirname(__file__)
 PATH_TO_MEDIA = os.path.join(PATH_TO_SCRIPT, 'media')
 PATH_TO_MOVIE = os.path.join(PATH_TO_MEDIA, 'video.mp4')
 PATH_TO_IMAGE = os.path.join(PATH_TO_MEDIA, 'image.jpg')
-HOUDINI_IP = '192.168.0.101'
+TRY_IPS = [
+        '192.168.0.111',
+        '192.168.0.101',
+    ]
+HOUDINI_IP = '192.168.0.111'
+HOUDINI_IP_ = '192.168.0.101'
 HOUDINI_PORT = '14999'
 
 
 def httpReq(command):
-    url ="http://" + HOUDINI_IP + ":" + HOUDINI_PORT + "/" + command
-    print(url)
-    try:
-        urlopen(url, timeout=2).read()
-    except Exception:
-        print('Err')
+    for ip in TRY_IPS:
+        url ="http://" + ip + ":" + HOUDINI_PORT + "/" + command
+        print('try', url)
+        try:
+            urlopen(url, timeout=2).read()
+        except Exception:
+            print('Err', url)
 
 
-def debounce(pin: int) -> int:
+def debounce(pin: int) -> bool:
     """ Debounces a GPIO input
 
     Args:
@@ -82,11 +86,11 @@ def debounce(pin: int) -> int:
         if GPIO.input(pin):
             debounce_check += 1
 
-    position = 1 if debounce_check > 25 else 0
+    position = True if debounce_check > 25 else False
     return position
 
 
-def print_sensor_status() -> None:
+def print_sensor_status() -> str:
     game_sensors = {
         'door_main': 0,
         'door_ship': 0,
@@ -97,7 +101,7 @@ def print_sensor_status() -> None:
     game_sensors['door_ship'] = GPIO.input(DOOR_SHIP)
     game_sensors['standby_switch'] = GPIO.input(STANDBY_SWITCH)
     game_sensors['throttle'] = GPIO.input(THROTTLE)
-    print(game_sensors)
+    return str(game_sensors)
 
 
 if __name__ == '__main__':
@@ -106,18 +110,14 @@ if __name__ == '__main__':
     print(game)
     print_sensor_status()
     print(PATH_TO_IMAGE)
-    try:
-        image_popen = Popen(['feh', '-Z', '-F', PATH_TO_IMAGE])
-    except FileNotFoundError as e:
-        print(e)
 
     while True:
         # Prevent looping too fast
         sleep(1)
-        print_sensor_status()
+        print(print_sensor_status(), game)
         if not GPIO.input(DOOR_MAIN) \
-            and not GPIO.input(STANDBY_SWITCH) \
-            and game.progress == 0:
+                and not GPIO.input(STANDBY_SWITCH) \
+                and game.progress == 0:
             if not debounce(DOOR_MAIN) and not debounce(STANDBY_SWITCH):
                 timer.new_datum()
                 print("Main door closed")
@@ -144,11 +144,17 @@ if __name__ == '__main__':
             if debounce(THROTTLE) is False:
                 game.next_stage()
                 httpReq('endgame')
-                GPIO.output(THROTTLE_SIGNAL_TO_ARDUINO,  0)
+                GPIO.output(ARDUINO_THROTTLE_PIN,  0)
                 try:
-                    video_popen = Popen(['cvlc', '-f', PATH_TO_MOVIE])
+                    vid = subprocess.Popen(
+                        ['cvlc', '-f', PATH_TO_MOVIE],
+                        stderr=subprocess.PIPE,
+                        stdout=subprocess.PIPE,
+
+                    )
                 except Exception as e:
                     print(e)
+
 
         if GPIO.input(STANDBY_SWITCH) == 1 and game.progress > 3:
             if debounce(STANDBY_SWITCH):
@@ -156,4 +162,16 @@ if __name__ == '__main__':
                 game.reset()
                 print(game)
                 GPIO.output(SMOKE_MACHINE,  0)
-                GPIO.output(THROTTLE_SIGNAL_TO_ARDUINO,  1)
+                GPIO.output(ARDUINO_THROTTLE_PIN,  1)
+                try:
+                    img.kill()
+                except Exception as e:
+                    pass
+                try:
+                    img = subprocess.Popen(
+                        ['feh', '-Z', '-F', PATH_TO_IMAGE],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                    )
+                except Exception as e:
+                    pass
