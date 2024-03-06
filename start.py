@@ -23,6 +23,7 @@ DOOR_MAIN = 23
 STANDBY_SWITCH = 24
 DOOR_SHIP = 5
 THROTTLE = 12
+THROTTLE_SIGNAL_TO_ARDUINO = 6
 SMOKE_MACHINE = 22
 
 DELAY_TO_SMOKE = 22
@@ -32,6 +33,8 @@ GPIO.setup(STANDBY_SWITCH, GPIO.IN)
 GPIO.setup(THROTTLE, GPIO.IN)
 GPIO.setup(DOOR_SHIP, GPIO.IN)
 GPIO.setup(SMOKE_MACHINE,  GPIO.OUT)
+GPIO.setup(THROTTLE_SIGNAL_TO_ARDUINO, GPIO.OUT)
+GPIO.output(THROTTLE_SIGNAL_TO_ARDUINO,  1)
 GPIO.output(SMOKE_MACHINE,  0)
 
 
@@ -78,7 +81,7 @@ def debounce(pin: int) -> int:
         # using if to make it compatible with Mock.GPIO
         if GPIO.input(pin):
             debounce_check += 1
-    
+
     position = 1 if debounce_check > 25 else 0
     return position
 
@@ -113,15 +116,15 @@ if __name__ == '__main__':
         sleep(1)
         print_sensor_status()
         if not GPIO.input(DOOR_MAIN) \
-                and not GPIO.input(STANDBY_SWITCH) \
-                and game.progress == 0:
+            and not GPIO.input(STANDBY_SWITCH) \
+            and game.progress == 0:
             if not debounce(DOOR_MAIN) and not debounce(STANDBY_SWITCH):
                 timer.new_datum()
                 print("Main door closed")
-                game.next_stage() 
+                game.next_stage()
                 print(game)
                 httpReq("start")
-            
+
         if game.progress == 1:
             time_to_smoke = DELAY_TO_SMOKE - timer.time_passed()
             print(f'time to smoke: {time_to_smoke}')
@@ -133,7 +136,7 @@ if __name__ == '__main__':
 
         if GPIO.input(DOOR_SHIP) == 1 and game.progress == 2:
             if debounce(DOOR_SHIP):
-                game.next_stage() 
+                game.next_stage()
                 print(game)
                 httpReq("checklist")
 
@@ -141,6 +144,7 @@ if __name__ == '__main__':
             if debounce(THROTTLE) is False:
                 game.next_stage()
                 httpReq('endgame')
+                GPIO.output(THROTTLE_SIGNAL_TO_ARDUINO,  0)
                 try:
                     video_popen = Popen(['cvlc', '-f', PATH_TO_MOVIE])
                 except Exception as e:
@@ -152,3 +156,4 @@ if __name__ == '__main__':
                 game.reset()
                 print(game)
                 GPIO.output(SMOKE_MACHINE,  0)
+                GPIO.output(THROTTLE_SIGNAL_TO_ARDUINO,  1)
